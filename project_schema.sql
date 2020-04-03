@@ -25,7 +25,7 @@ CREATE TABLE audio (
     	tempo float,
 	type text,
 	id text,
-	spotify_uri text,
+	uri text,
 	track_href text,
 	analysis_url text,
     	duration_ms float,
@@ -35,7 +35,7 @@ CREATE TABLE audio (
 CREATE TABLE lyrics (
 	title text,
 	album text,
-	release_date date,
+	year date,
 	lyrics text,
 	image text,
     	spotify_uri text
@@ -70,13 +70,9 @@ CREATE TABLE posts (
 	is_video boolean,
 	link_flair_background_color text,
 	link_flair_richtext text,
-	link_flair_template_id text,
-	link_flair_text text,
 	link_flair_text_color text,
 	link_flair_type text,
 	locked boolean,	
-	media text,
-	media_embed text,
 	media_only boolean,
 	no_follow boolean,
 	num_comments int,
@@ -85,13 +81,10 @@ CREATE TABLE posts (
 	parent_whitelist_status text,
 	permalink text,
 	pinned boolean,
-	post_hint text,
-	preview text,
-	pwls float,
+	pwls text,
+	removed_by_category text,
 	retrieved_on timestamp,
 	score float,
-	secure_media text,
-	secure_media_embed text,
 	selftext text,
 	send_replies boolean,
 	spoiler boolean,
@@ -101,14 +94,22 @@ CREATE TABLE posts (
 	subreddit_subscribers int,
 	subreddit_type text,
 	thumbnail text,
-	thumbnail_height float,
-	thumbnail_width float,
 	title text,
 	total_awards_received int,
 	url text,
 	whitelist_status text,
-	wls float
-
+	wls text,
+	created timestamp,
+	post_hint text,
+	preview text,
+	thumbnail_height float,
+	thumbnail_width float,
+	media text,
+	media_embed text,
+	secure_media text,
+	secure_media_embed text,
+	link_flair_text text
+		
 );
 
 CREATE TABLE comments (
@@ -124,6 +125,7 @@ CREATE TABLE comments (
 	author_flair_type text,
 	author_fullname text,
 	author_patreon_flair boolean,
+	author_premium text,
 	awarders text,
 	body text,
 	collapsed_because_crowd_control text,
@@ -143,6 +145,7 @@ CREATE TABLE comments (
 	subreddit text,
 	subreddit_id text,
 	total_awards_received int,
+	created timestamp,
 	distinguished text,
 	author_cakeday text
 );

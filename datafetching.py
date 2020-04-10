@@ -113,10 +113,13 @@ def getComments(subreddit, from_date, to_date):
 
 # Fetching the data:
 
-# In[13]:
+# In[4]:
 
 
-months = [ f"{y}-{m:02d}-01" for y in range(2015, 2019+1) for m in range(1, 12+1) ]
+START_YEAR = 2019
+END_YEAR   = 2019
+
+months = [ f"{y}-{m:02d}-01" for y in range(START_YEAR, END_YEAR+1) for m in range(1, 12+1) ] + [ f"{END_YEAR+1}-01-01" ]
 
 print(months[0], "to", months[-1])
 
@@ -125,7 +128,10 @@ print(months[0], "to", months[-1])
 
 
 chartsTable = getCharts(months)
+print("Fetched charts.")
+
 chartsTable.to_sql("charts", connection, if_exists = "replace") # creates a new table
+print("Sent charts to db.")
 
 chartsTable
 
@@ -134,7 +140,10 @@ chartsTable
 
 
 songURIs = getSongURIs(chartsTable[["title", "artist"]].drop_duplicates())
+print("Fetched song URIs.")
+
 songURIs.to_sql("uri", connection, if_exists = "replace")
+print("Sent song URIs to db..")
 
 songURIs
 
@@ -145,11 +154,14 @@ songURIs
 del chartsTable
 
 
-# In[8]:
+# In[2]:
 
 
 audioTable = getSongFeatures(songURIs.uri) # take the set in case songs are on the charts for many months
+print("Fetched audio features.")
+
 audioTable.to_sql("audio", connection, if_exists = "replace")
+print("Sent audio features to db.")
 
 audioTable
 
@@ -164,7 +176,10 @@ del audioTable
 
 
 lyricsTable = getSongLyrics(songURIs) # slow, will replace with MusixMatch API
+print("Fetched lyrics.")
+
 lyricsTable.to_sql("lyrics", connection, if_exists = "replace")
+print("Sent lyrics to db.")
 
 lyricsTable
 
@@ -179,7 +194,10 @@ del lyricsTable
 
 
 postsTable = getPosts("news", months[0], months[-1])
+print("Fetched posts.")
+
 postsTable.astype(str).to_sql("posts", connection, if_exists = "replace") # cast to string to insert dict objects
+print("Sent posts to db.")
 
 postsTable
 
@@ -194,7 +212,10 @@ del postsTable
 
 
 commentsTable = getComments("news", months[0], months[-1])
+print("Fetched comments.")
+
 commentsTable.astype(str).to_sql("comments", connection, if_exists = "replace")
+print("Sent comments to db.")
 
 commentsTable
 

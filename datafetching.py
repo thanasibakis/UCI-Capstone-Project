@@ -121,7 +121,8 @@ END_YEAR   = 2019
 
 months = [ f"{y}-{m:02d}-01" for y in range(START_YEAR, END_YEAR+1) for m in range(1, 12+1) ] + [ f"{END_YEAR+1}-01-01" ]
 
-print(months[0], "to", months[-1])
+print("Getting data from", months[0], "to", months[-1])
+print("______________________________________________")
 
 
 # In[6]:
@@ -193,37 +194,33 @@ del lyricsTable
 # In[12]:
 
 
-postsTable = getPosts("news", months[0], months[-1])
-print("Fetched posts.")
+for i in range(0, len(months), 6): # we will run out of memory!
+    startMonth = months[i]
+    endMonth = months[i+6]
+    
+    postsTable = getPosts("news", startMonth, endMonth)
+    print("Fetched posts.")
 
-postsTable.astype(str).to_sql("posts", connection, if_exists = "replace") # cast to string to insert dict objects
-print("Sent posts to db.")
+    postsTable.astype(str).to_sql("posts", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects
+    print("Sent posts to db.")
 
-postsTable
-
-
-# In[ ]:
-
-
-del postsTable
+    del postsTable
 
 
 # In[ ]:
 
 
-commentsTable = getComments("news", months[0], months[-1])
-print("Fetched comments.")
+for i in range(0, len(months), 6):
+    startMonth = months[i]
+    endMonth = months[i+6]
+    
+    commentsTable = getComments("news", startMonth, endMonth)
+    print("Fetched comments.")
 
-commentsTable.astype(str).to_sql("comments", connection, if_exists = "replace")
-print("Sent comments to db.")
+    commentsTable.astype(str).to_sql("comments", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects
+    print("Sent comments to db.")
 
-commentsTable
-
-
-# In[ ]:
-
-
-del commentsTable
+    del commentsTable
 
 
 # In[ ]:

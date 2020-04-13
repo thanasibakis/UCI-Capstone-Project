@@ -199,7 +199,7 @@ del lyricsTable
 
 for i in range(0, len(months), 6): # we will run out of memory!
     startMonth = months[i]
-    endMonth = months[i+6]
+    endMonth = months[i+6] if i < len(months)-1 else months[-1]
     
     postsTable = getPosts("news", startMonth, endMonth, filter = ["id", "num_comments", "title", "created", "url", "permalink"])
     print("Fetched posts.")
@@ -215,7 +215,7 @@ for i in range(0, len(months), 6): # we will run out of memory!
 
 for i in range(0, len(months), 6):
     startMonth = months[i]
-    endMonth = months[i+6]
+    endMonth = months[i+6] if i < len(months)-1 else months[-1]
     
     commentsTable = getComments("news", startMonth, endMonth, filter = ["body", "id", "link_id", "parent_id", "score", "created", "subreddit", "permalink"])
     print("Fetched comments.")

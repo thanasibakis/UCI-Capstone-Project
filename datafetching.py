@@ -67,12 +67,16 @@ def getSingleSongFeatures(spotify_uri):
 
 
 def getSingleSongLyrics(title, artist):
-    song = genius.search_song(title = title, artist = artist)
+    try:
+        song = genius.search_song(title = title, artist = artist)
+
+        if song is None:
+            return dict()
+
+        return dict(song.to_dict())
     
-    if song is None:
+    except: # API likes to disconnect?
         return dict()
-    
-    return dict(song.to_dict())
 
     
 def redditSearch(search_function, subreddit, from_date, to_date, **kwargs):
@@ -113,7 +117,7 @@ def getComments(subreddit, from_date, to_date, **kwargs):
 
 # Fetching the data:
 
-# In[6]:
+# In[5]:
 
 
 START_YEAR = 2019

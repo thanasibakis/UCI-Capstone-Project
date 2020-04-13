@@ -75,14 +75,14 @@ def getSingleSongLyrics(title, artist):
     return dict(song.to_dict())
 
     
-def redditSearch(search_function, subreddit, from_date, to_date):
+def redditSearch(search_function, subreddit, from_date, to_date, **kwargs):
     start_date = datetime(*[ int(k) for k in from_date.split('-') ])
     start_epoch = int(start_date.timestamp())
     
     end_date = datetime(*[ int(k) for k in to_date.split('-') ])
     end_epoch = int(end_date.timestamp())
 
-    results = search_function(after = start_epoch, before = end_epoch, subreddit = subreddit)
+    results = search_function(after = start_epoch, before = end_epoch, subreddit = subreddit, **kwargs)
     
     return pd.DataFrame( row.d_ for row in results )
 
@@ -104,16 +104,16 @@ def getSongFeatures(spotify_uris):
 def getSongLyrics(songs):
     return pd.DataFrame( getSingleSongLyrics(song.title, song.artist) for song in songs.itertuples() )
 
-def getPosts(subreddit, from_date, to_date):
-    return redditSearch(reddit.search_submissions, subreddit, from_date, to_date)
+def getPosts(subreddit, from_date, to_date, **kwargs):
+    return redditSearch(reddit.search_submissions, subreddit, from_date, to_date, **kwargs)
 
-def getComments(subreddit, from_date, to_date):
-    return redditSearch(reddit.search_comments, subreddit, from_date, to_date)
+def getComments(subreddit, from_date, to_date, **kwargs):
+    return redditSearch(reddit.search_comments, subreddit, from_date, to_date, **kwargs)
 
 
 # Fetching the data:
 
-# In[4]:
+# In[6]:
 
 
 START_YEAR = 2019
@@ -122,7 +122,6 @@ END_YEAR   = 2019
 months = [ f"{y}-{m:02d}-01" for y in range(START_YEAR, END_YEAR+1) for m in range(1, 12+1) ] + [ f"{END_YEAR+1}-01-01" ]
 
 print("Getting data from", months[0], "to", months[-1])
-print("______________________________________________")
 
 
 # In[6]:
@@ -191,14 +190,14 @@ lyricsTable
 del lyricsTable
 
 
-# In[12]:
+# In[7]:
 
 
 for i in range(0, len(months), 6): # we will run out of memory!
     startMonth = months[i]
     endMonth = months[i+6]
     
-    postsTable = getPosts("news", startMonth, endMonth)
+    postsTable = getPosts("news", startMonth, endMonth, filter = ["id", "num_comments", "title", "created", "url", "permalink"])
     print("Fetched posts.")
 
     postsTable.astype(str).to_sql("posts", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects
@@ -214,7 +213,7 @@ for i in range(0, len(months), 6):
     startMonth = months[i]
     endMonth = months[i+6]
     
-    commentsTable = getComments("news", startMonth, endMonth)
+    commentsTable = getComments("news", startMonth, endMonth, filter = ["body", "id", "link_id", "parent_id", "score", "created", "subreddit", "permalink"])
     print("Fetched comments.")
 
     commentsTable.astype(str).to_sql("comments", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects

@@ -1,6 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
+
+
+START_YEAR = 2019
+END_YEAR   = 2019
+
+COLLECT_MUSIC_DATA = False
+COLLECT_REDDIT_POSTS = False
+COLLECT_REDDIT_COMMENTS = True
+
+
 # In[1]:
 
 
@@ -120,9 +131,6 @@ def getComments(subreddit, from_date, to_date, **kwargs):
 # In[5]:
 
 
-START_YEAR = 2019
-END_YEAR   = 2019
-
 months = [ f"{y}-{m:02d}-01" for y in range(START_YEAR, END_YEAR+1) for m in range(1, 12+1) ] + [ f"{END_YEAR+1}-01-01" ]
 
 print("Getting data from", months[0], "to", months[-1])
@@ -131,99 +139,70 @@ print("Getting data from", months[0], "to", months[-1])
 # In[6]:
 
 
-chartsTable = getCharts(months)
-print("Fetched charts.")
+if COLLECT_MUSIC_DATA:
+    chartsTable = getCharts(months)
+    print("Fetched charts.")
 
-chartsTable.to_sql("charts", connection, if_exists = "replace") # creates a new table
-print("Sent charts to db.")
+    chartsTable.to_sql("charts", connection, if_exists = "replace") # creates a new table
+    print("Sent charts to db.")
 
-chartsTable
+    songURIs = getSongURIs(chartsTable[["title", "artist"]].drop_duplicates())
+    print("Fetched song URIs.")
+
+    songURIs.to_sql("uri", connection, if_exists = "replace")
+    print("Sent song URIs to db..")
+    
+    del chartsTable
+    
+    audioTable = getSongFeatures(songURIs.uri)
+    print("Fetched audio features.")
+
+    audioTable.to_sql("audio", connection, if_exists = "replace")
+    print("Sent audio features to db.")
+    
+    del audioTable
+    
+    lyricsTable = getSongLyrics(songURIs)
+    print("Fetched lyrics.")
+
+    lyricsTable.to_sql("lyrics", connection, if_exists = "replace")
+    print("Sent lyrics to db.")
+    
+    del lyricsTable
 
 
 # In[7]:
 
 
-songURIs = getSongURIs(chartsTable[["title", "artist"]].drop_duplicates())
-print("Fetched song URIs.")
+if COLLECT_REDDIT_POSTS:
+    for i in range(0, len(months), 6): # we will run out of memory!
+        startMonth = months[i]
+        endMonth = months[i+6] if i < len(months)-1 else months[-1]
 
-songURIs.to_sql("uri", connection, if_exists = "replace")
-print("Sent song URIs to db..")
+        postsTable = getPosts("news", startMonth, endMonth, filter = ["id", "num_comments", "title", "created", "url", "permalink"])
+        print("Fetched posts.")
 
-songURIs
+        postsTable.astype(str).to_sql("posts", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects
+        print("Sent posts to db.")
 
-
-# In[ ]:
-
-
-del chartsTable
-
-
-# In[2]:
-
-
-audioTable = getSongFeatures(songURIs.uri) # take the set in case songs are on the charts for many months
-print("Fetched audio features.")
-
-audioTable.to_sql("audio", connection, if_exists = "replace")
-print("Sent audio features to db.")
-
-audioTable
+        del postsTable
 
 
 # In[ ]:
 
 
-del audioTable
+if COLLECT_REDDIT_COMMENTS:
+    for i in range(0, len(months), 6):
+        startMonth = months[i]
+        endMonth = months[i+6] if i < len(months)-1 else months[-1]
 
+        commentsTable = getComments("news", startMonth, endMonth, filter = ["body", "id", "link_id", "parent_id", "score", "created", "subreddit", "permalink"], sort = "desc", sort_type = "score", size = 500)
+        print("Fetched comments.")
 
-# In[10]:
+        commentsTable.astype(str).to_sql("comments", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects
+        print("Sent comments to db.")
 
-
-lyricsTable = getSongLyrics(songURIs) # slow, will replace with MusixMatch API
-print("Fetched lyrics.")
-
-lyricsTable.to_sql("lyrics", connection, if_exists = "replace")
-print("Sent lyrics to db.")
-
-lyricsTable
-
-
-# In[11]:
-
-
-del lyricsTable
-
-
-# In[7]:
-
-
-for i in range(0, len(months), 6): # we will run out of memory!
-    startMonth = months[i]
-    endMonth = months[i+6] if i < len(months)-1 else months[-1]
-    
-    postsTable = getPosts("news", startMonth, endMonth, filter = ["id", "num_comments", "title", "created", "url", "permalink"])
-    print("Fetched posts.")
-
-    postsTable.astype(str).to_sql("posts", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects
-    print("Sent posts to db.")
-
-    del postsTable
-
-
-# In[ ]:
-
-
-for i in range(0, len(months), 6):
-    startMonth = months[i]
-    endMonth = months[i+6] if i < len(months)-1 else months[-1]
-    
-    commentsTable = getComments("news", startMonth, endMonth, filter = ["body", "id", "link_id", "parent_id", "score", "created", "subreddit", "permalink"])
-    print("Fetched comments.")
-
-    commentsTable.astype(str).to_sql("comments", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects
-    print("Sent comments to db.")
-
-    del commentsTable
+        del commentsTable
 
 
 # In[ ]:

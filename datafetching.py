@@ -1,18 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 
-# In[ ]:
-
-
-START_YEAR = 2019
+START_YEAR = 2015
 END_YEAR   = 2019
 
-COLLECT_MUSIC_DATA = False
-COLLECT_REDDIT_POSTS = False
+COLLECT_MUSIC_DATA = True
+COLLECT_REDDIT_POSTS = True
 COLLECT_REDDIT_COMMENTS = True
-
-
-# In[1]:
 
 
 import billboard
@@ -25,9 +19,6 @@ from psaw import PushshiftAPI
 from spotipy.oauth2 import SpotifyClientCredentials
 
 from api_keys import *
-
-
-# In[2]:
 
 
 sp = spotipy.Spotify(client_credentials_manager = SpotifyClientCredentials(client_id = SPOTIFY_ID,
@@ -45,9 +36,6 @@ connection = engine.connect()
 
 # Our API wrappers:
 
-# In[3]:
-
-
 def getSingleChart(date):
     chart = billboard.ChartData("hot-100", date = date)
     
@@ -56,7 +44,9 @@ def getSingleChart(date):
 
 def getSingleSongURI(title, artist):
     try:
-        uri = sp.search(q = f"{title} {artist}", type = "track", limit = 1)["tracks"]["items"][0]["uri"]
+        tokens = artist.split(' ')
+        artist_abbv = ' '.join(tokens[:min(2, len(tokens))]) # sometimes artist includes featured guests, which can mess up the search
+        uri = sp.search(q = f"{title} {artist_abbv}", type = "track", limit = 1)["tracks"]["items"][0]["uri"]
         
         return {"uri":    uri,
                 "title":  title,
@@ -104,9 +94,6 @@ def redditSearch(search_function, subreddit, from_date, to_date, **kwargs):
 
 # Aggregating those calls:
 
-# In[4]:
-
-
 def getCharts(dates):
     return pd.concat( getSingleChart(date) for date in dates )
 
@@ -117,7 +104,7 @@ def getSongFeatures(spotify_uris):
     return pd.DataFrame( getSingleSongFeatures(uri) for uri in spotify_uris if uri is not None )
 
 def getSongLyrics(songs):
-    return pd.DataFrame( getSingleSongLyrics(song.title, song.artist) for song in songs.itertuples() )
+    return pd.DataFrame( dict(getSingleSongLyrics(song.title, song.artist), uri = song.uri) for song in songs.itertuples() )
 
 def getPosts(subreddit, from_date, to_date, **kwargs):
     return redditSearch(reddit.search_submissions, subreddit, from_date, to_date, **kwargs)
@@ -128,15 +115,9 @@ def getComments(subreddit, from_date, to_date, **kwargs):
 
 # Fetching the data:
 
-# In[5]:
-
-
 months = [ f"{y}-{m:02d}-01" for y in range(START_YEAR, END_YEAR+1) for m in range(1, 12+1) ] + [ f"{END_YEAR+1}-01-01" ]
 
 print("Getting data from", months[0], "to", months[-1])
-
-
-# In[6]:
 
 
 if COLLECT_MUSIC_DATA:
@@ -171,9 +152,6 @@ if COLLECT_MUSIC_DATA:
     del lyricsTable
 
 
-# In[7]:
-
-
 if COLLECT_REDDIT_POSTS:
     for i in range(0, len(months), 6): # we will run out of memory!
         startMonth = months[i]
@@ -188,9 +166,6 @@ if COLLECT_REDDIT_POSTS:
         del postsTable
 
 
-# In[ ]:
-
-
 if COLLECT_REDDIT_COMMENTS:
     for i in range(0, len(months), 6):
         startMonth = months[i]
@@ -203,9 +178,6 @@ if COLLECT_REDDIT_COMMENTS:
         print("Sent comments to db.")
 
         del commentsTable
-
-
-# In[ ]:
 
 
 connection.close()

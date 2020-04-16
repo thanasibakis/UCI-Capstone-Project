@@ -171,7 +171,7 @@ if COLLECT_REDDIT_COMMENTS:
         startMonth = months[i]
         endMonth = months[i+6] if i < len(months)-1 else months[-1]
 
-        commentsTable = getComments("news", startMonth, endMonth, filter = ["body", "id", "link_id", "parent_id", "score", "created", "subreddit", "permalink"], sort = "desc", sort_type = "score", size = 500)
+        commentsTable = getComments("news", startMonth, endMonth, filter = ["body", "id", "link_id", "parent_id", "score", "created", "subreddit"], sort = "desc", sort_type = "score", size = 500)
         print("Fetched comments.")
 
         commentsTable.astype(str).to_sql("comments", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects

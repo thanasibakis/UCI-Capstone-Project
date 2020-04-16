@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-START_YEAR = 2015
+START_YEAR = 2010
 END_YEAR   = 2019
 
 COLLECT_MUSIC_DATA = True

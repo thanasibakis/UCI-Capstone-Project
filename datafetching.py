@@ -4,7 +4,7 @@
 START_YEAR = 2010
 END_YEAR   = 2019
 
-COLLECT_MUSIC_DATA = True
+COLLECT_MUSIC_DATA = False
 COLLECT_REDDIT_POSTS = True
 COLLECT_REDDIT_COMMENTS = True
 
@@ -157,7 +157,7 @@ if COLLECT_REDDIT_POSTS:
         startMonth = months[i]
         endMonth = months[i+6] if i < len(months)-1 else months[-1]
 
-        postsTable = getPosts("news", startMonth, endMonth, filter = ["id", "num_comments", "title", "created", "url", "permalink"])
+        postsTable = getPosts("news", startMonth, endMonth, filter = ["id", "score", "num_comments", "title", "created", "url", "permalink"])
         print("Fetched posts.")
 
         postsTable.astype(str).to_sql("posts", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects
@@ -171,7 +171,7 @@ if COLLECT_REDDIT_COMMENTS:
         startMonth = months[i]
         endMonth = months[i+6] if i < len(months)-1 else months[-1]
 
-        commentsTable = getComments("news", startMonth, endMonth, filter = ["body", "id", "link_id", "parent_id", "score", "created", "subreddit"], sort = "desc", sort_type = "score", size = 500)
+        commentsTable = getComments("news", startMonth, endMonth, filter = ["body", "id", "link_id", "parent_id", "score", "created", "subreddit"])
         print("Fetched comments.")
 
         commentsTable.astype(str).to_sql("comments", connection, if_exists = "replace" if i == 0 else "append") # cast to string to insert dict objects

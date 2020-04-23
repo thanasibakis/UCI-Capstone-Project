@@ -53,7 +53,7 @@ def lemmatize_words(tokenized_words: list):
 # Gives 604 features: 300 minimum word embedding, 300 max word embed, 4 sentiment scores
 def text_features(text: str):
     if not text:
-        return (0, 0, 0, 0)
+        return None
 
     sid = SentimentIntensityAnalyzer()
     
@@ -63,21 +63,25 @@ def text_features(text: str):
     words_text = ' '.join(lemmatized_words)
     sentiment_features = sid.polarity_scores(words_text)
 
-    word_embeddings = np.array(model[word] for word in lemmatized_words)
+    word_embeddings = np.array([ model[word] for word in lemmatized_words if word in model.vocab ])
 
     min_embedding = pd.DataFrame(word_embeddings.min(axis=0)).T
     min_embedding.columns = (f"min_embedding{i+1}" for i in range(300))
 
     max_embedding = pd.DataFrame(word_embeddings.max(axis=0)).T
-    max_embedding.columns = (f"max_embedding{i+1}" for i in range(300))    
+    max_embedding.columns = (f"max_embedding{i+1}" for i in range(300))
 
     # Create one long row
     return pd.concat((min_embedding, max_embedding), axis=1) \
         .assign(**sentiment_features)
 
 def create_text_features(table_name, column_name):
+    orig_table = get_db_table(table_name)
+
     # Merge the long rows
-    table = pd.concat( text_features(row[column_name]) for _, row in table.iterrows )
+    feature_rows = ( text_features(row[column_name]).assign(original_index = index) for index, row in orig_table.iterrows() )
+    table = pd.concat(filter(lambda row: row is not None, feature_rows)) \
+        .set_index("original_index")
 
     send_to_db_table(f"{table_name}_scores", table)
 

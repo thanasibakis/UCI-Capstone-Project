@@ -2,5 +2,6 @@
 api_keys.py
 api_keys.py.save
 GoogleNews-vectors-negative300.bin
+nohup.out
 .ipynb_checkpoints/
 __pycache__/

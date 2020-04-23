@@ -51,7 +51,7 @@ def lemmatize_words(tokenized_words: list):
     return [ lem.lemmatize(w, get_part_of_speech(w)) for w in tokenized_words if w not in STOPWORDS ]
 
 # Gives 604 features: 300 minimum word embedding, 300 max word embed, 4 sentiment scores
-def text_features(text: str):
+def text_features(text: str, index_value):
     if not text:
         return None
 
@@ -73,14 +73,15 @@ def text_features(text: str):
 
     # Create one long row
     return pd.concat((min_embedding, max_embedding), axis=1) \
-        .assign(**sentiment_features)
+        .assign(**sentiment_features) \
+        .assign(original_index = index_value)
 
 def create_text_features(table_name, column_name):
     orig_table = get_db_table(table_name)
 
     # Merge the long rows
-    feature_rows = ( text_features(row[column_name]).assign(original_index = index) for index, row in orig_table.iterrows() )
-    table = pd.concat(filter(lambda row: row is not None, feature_rows)) \
+    feature_rows = ( text_features(row[column_name], index) for index, row in orig_table.iterrows() )
+    table = pd.concat( row for row in feature_rows if row is not None ) \
         .set_index("original_index")
 
     send_to_db_table(f"{table_name}_scores", table)

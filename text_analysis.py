@@ -88,5 +88,6 @@ def create_text_features(table_name, column_name):
 
 
 if __name__ == "__main__":
-    create_text_features("lyrics", "lyrics")
+    #create_text_features("lyrics", "lyrics")
+    create_text_features("posts", "title")
 

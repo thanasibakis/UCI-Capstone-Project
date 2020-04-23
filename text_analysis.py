@@ -10,7 +10,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 from api_keys import *
 
-STOPWORDS = set(stopwords.words("English"))
+STOPWORDS = set(stopwords.words("english"))
 
 def get_db_table(table_name):
     engine = db.create_engine(f"postgresql+psycopg2://{SQL_USER}:{SQL_PASS}@{SQL_HOST}/{SQL_DB}")
@@ -73,3 +73,8 @@ def create_text_features(table_name, column_name):
         table.loc[index, ['neg', 'neu', 'pos', 'compound']] = text_scores(row[column_name])
 
     send_to_db_table(f"{table_name}_scores", table)
+
+
+if __name__ == "__main__":
+    create_text_features("lyrics", "lyrics")
+

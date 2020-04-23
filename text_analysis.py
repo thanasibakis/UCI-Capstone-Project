@@ -1,7 +1,8 @@
 import pandas as pd
+import numpy as np
 import sqlalchemy as db
-
 import nltk
+from gensim.models import KeyedVectors
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.corpus import wordnet
@@ -11,6 +12,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from api_keys import *
 
 STOPWORDS = set(stopwords.words("english"))
+model = KeyedVectors.load_word2vec_format("GoogleNews-vectors-negative300.bin", binary=True)
 
 def get_db_table(table_name):
     engine = db.create_engine(f"postgresql+psycopg2://{SQL_USER}:{SQL_PASS}@{SQL_HOST}/{SQL_DB}")
@@ -48,7 +50,8 @@ def lemmatize_words(tokenized_words: list):
 
     return [ lem.lemmatize(w, get_part_of_speech(w)) for w in tokenized_words if w not in STOPWORDS ]
 
-def text_scores(text: str):
+# Gives 604 features: 300 minimum word embedding, 300 max word embed, 4 sentiment scores
+def text_features(text: str):
     if not text:
         return (0, 0, 0, 0)
 
@@ -56,21 +59,25 @@ def text_scores(text: str):
     
     tokenized_words = word_tokenize(text)
     lemmatized_words = lemmatize_words(tokenized_words)
-    words_text = ' '.join(lemmatized_words)
-    text_scores = sid.polarity_scores(words_text)
 
-    return text_scores.values()
+    words_text = ' '.join(lemmatized_words)
+    sentiment_features = sid.polarity_scores(words_text)
+
+    word_embeddings = np.array(model[word] for word in lemmatized_words)
+
+    min_embedding = pd.DataFrame(word_embeddings.min(axis=0)).T
+    min_embedding.columns = (f"min_embedding{i+1}" for i in range(300))
+
+    max_embedding = pd.DataFrame(word_embeddings.max(axis=0)).T
+    max_embedding.columns = (f"max_embedding{i+1}" for i in range(300))    
+
+    # Create one long row
+    return pd.concat((min_embedding, max_embedding), axis=1) \
+        .assign(**sentiment_features)
 
 def create_text_features(table_name, column_name):
-    table = get_db_table(table_name)
-
-    table["neg"] = 0.0
-    table["neu"] = 0.0
-    table["pos"] = 0.0
-    table["compound"] = 0.0
-
-    for index, row in table.iterrows():
-        table.loc[index, ['neg', 'neu', 'pos', 'compound']] = text_scores(row[column_name])
+    # Merge the long rows
+    table = pd.concat( text_features(row[column_name]) for _, row in table.iterrows )
 
     send_to_db_table(f"{table_name}_scores", table)
 

@@ -6,7 +6,7 @@ END_YEAR   = 2019
 
 COLLECT_MUSIC_DATA = False
 COLLECT_REDDIT_POSTS = True
-COLLECT_REDDIT_COMMENTS = True
+COLLECT_REDDIT_COMMENTS = False # doesn't work so well
 
 
 import billboard

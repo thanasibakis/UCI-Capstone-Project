@@ -14,23 +14,6 @@ from api_keys import *
 STOPWORDS = set(stopwords.words("english"))
 model = KeyedVectors.load_word2vec_format("GoogleNews-vectors-negative300.bin", binary=True)
 
-def get_db_table(table_name):
-    engine = db.create_engine(f"postgresql+psycopg2://{SQL_USER}:{SQL_PASS}@{SQL_HOST}/{SQL_DB}")
-    connection = engine.connect()
-
-    table = pd.read_sql_query(f"select * from {table_name}", connection)
-
-    connection.close()
-
-    return table
-
-def send_to_db_table(table_name, df):
-    engine = db.create_engine(f"postgresql+psycopg2://{SQL_USER}:{SQL_PASS}@{SQL_HOST}/{SQL_DB}")
-    connection = engine.connect()
-
-    df.to_sql(table_name, connection, if_exists = "replace")
-
-    connection.close()
 
 # https://www.machinelearningplus.com/nlp/lemmatization-examples-python/
 def get_part_of_speech(word):
@@ -77,14 +60,19 @@ def text_features(text: str, index_value):
         .assign(original_index = index_value)
 
 def create_text_features(table_name, column_name):
-    orig_table = get_db_table(table_name)
+    engine = db.create_engine(f"postgresql+psycopg2://{SQL_USER}:{SQL_PASS}@{SQL_HOST}/{SQL_DB}")
+    connection = engine.connect()
+
+    orig_table = pd.read_sql_query(f"select * from {table_name}", connection, chunksize=3000)
+##TODO we need to do use this orig_table generator to fetch chunks and push chunks to the db in a new outer loop
 
     # Merge the long rows
     feature_rows = ( text_features(row[column_name], index) for index, row in orig_table.iterrows() )
     table = pd.concat( row for row in feature_rows if row is not None ) \
         .set_index("original_index")
 
-    send_to_db_table(f"{table_name}_scores", table)
+    table.to_sql(f"{table_name}_scores", connection, if_exists = "replace")
+    connection.close()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import sqlalchemy as db
 import nltk
+from datetime import datetime
 from gensim.models import KeyedVectors
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -10,6 +11,12 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 from api_keys import *
+
+START_YEAR = 2010
+END_YEAR   = 2019
+
+PROCESS_LYRICS = False
+PROCESS_POSTS = True
 
 STOPWORDS = set(stopwords.words("english"))
 model = KeyedVectors.load_word2vec_format("GoogleNews-vectors-negative300.bin", binary=True)
@@ -57,27 +64,57 @@ def text_features(text: str, index_value):
     # Create one long row
     return pd.concat((min_embedding, max_embedding), axis=1) \
         .assign(**sentiment_features) \
-        .assign(original_index = index_value)
+        .assign(original_index=index_value)
+        
+def create_text_features(table, column_name):
+    feature_rows = ( text_features(row[column_name], index) for index, row in table.iterrows() )
+    table = pd.concat( row for row in feature_rows if row is not None ) \
+        .set_index("original_index")
 
-def create_text_features(table_name, column_name):
-    engine = db.create_engine(f"postgresql+psycopg2://{SQL_USER}:{SQL_PASS}@{SQL_HOST}/{SQL_DB}")
-    connection = engine.connect()
-
-    orig_table = pd.read_sql_query(f"select * from {table_name}", connection, chunksize=3000)
-    should_create_table = True
-
-    for table_chunk in orig_table:
-        feature_rows = ( text_features(row[column_name], index) for index, row in table_chunk.iterrows() )
-        table = pd.concat( row for row in feature_rows if row is not None ) \
-            .set_index("original_index")
-
-        table.to_sql(f"{table_name}_scores", connection, if_exists = "replace" if should_create_table else "append")
-        should_create_table = False
-
-    connection.close()
+    return table
+    
 
 
 if __name__ == "__main__":
-    #create_text_features("lyrics", "lyrics")
-    create_text_features("posts", "title")
+    engine = db.create_engine(f"postgresql+psycopg2://{SQL_USER}:{SQL_PASS}@{SQL_HOST}/{SQL_DB}")
+    connection = engine.connect()
+
+
+    # Lyrics processing
+    
+    if PROCESS_LYRICS:
+        lyrics_table = pd.read_sql_query(f"select * from lyrics", connection)
+
+        new_table = create_text_features(lyrics_table, "lyrics")
+        new_table.to_sql(f"lyrics_scores", connection, if_exists="replace")
+
+        del lyrics_table
+        del new_table
+
+    
+    # Reddit posts processing
+
+    if PROCESS_POSTS:
+        months = [ f"{y}-{m:02d}-01" for y in range(START_YEAR, END_YEAR+1) for m in range(1, 12+1) ] + [ f"{END_YEAR+1}-01-01" ]
+        
+        should_create_table = True
+
+        for i in range(len(months)-1):
+            start_time = datetime.strptime(months[i], "%Y-%m-%d").timestamp()
+            end_time = datetime.strptime(months[i+1], "%Y-%m-%d").timestamp()
+
+            titles = pd.read_sql_query(f"select title from posts where created_utc >= {start_time} and created_utc < {end_time}", connection).title
+            month_table = pd.DataFrame([{"month": months[i], "title_text": titles.join('\n')}]) \
+                .set_index("month")
+            
+            new_table = create_text_features(month_table, "title_text")
+
+            new_table.to_sql(f"posts_scores", connection, if_exists = "replace" if should_create_table else "append")
+            should_create_table = False
+
+            del month_table
+            del new_table
+
+
+    connection.close()
 

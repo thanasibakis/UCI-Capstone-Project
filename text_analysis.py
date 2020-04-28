@@ -104,7 +104,7 @@ if __name__ == "__main__":
             end_time = datetime.strptime(months[i+1], "%Y-%m-%d").timestamp()
 
             titles = pd.read_sql_query(f"select title from posts where created_utc::bigint >= {start_time} and created_utc::bigint < {end_time}", connection).title
-            month_table = pd.DataFrame([{"month": months[i], "title_text": titles.join('\n')}]) \
+            month_table = pd.DataFrame([{"month": months[i], "title_text": titles.str.join('\n')}]) \
                 .set_index("month")
             
             new_table = create_text_features(month_table, "title_text")

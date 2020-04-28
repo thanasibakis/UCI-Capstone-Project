@@ -103,7 +103,7 @@ if __name__ == "__main__":
             start_time = datetime.strptime(months[i], "%Y-%m-%d").timestamp()
             end_time = datetime.strptime(months[i+1], "%Y-%m-%d").timestamp()
 
-            titles = pd.read_sql_query(f"select title from posts where created_utc >= {start_time} and created_utc < {end_time}", connection).title
+            titles = pd.read_sql_query(f"select title from posts where created_utc::bigint >= {start_time} and created_utc::bigint < {end_time}", connection).title
             month_table = pd.DataFrame([{"month": months[i], "title_text": titles.join('\n')}]) \
                 .set_index("month")
             

@@ -64,14 +64,16 @@ def create_text_features(table_name, column_name):
     connection = engine.connect()
 
     orig_table = pd.read_sql_query(f"select * from {table_name}", connection, chunksize=3000)
-##TODO we need to do use this orig_table generator to fetch chunks and push chunks to the db in a new outer loop
+    should_create_table = True
 
-    # Merge the long rows
-    feature_rows = ( text_features(row[column_name], index) for index, row in orig_table.iterrows() )
-    table = pd.concat( row for row in feature_rows if row is not None ) \
-        .set_index("original_index")
+    for table_chunk in orig_table:
+        feature_rows = ( text_features(row[column_name], index) for index, row in table_chunk.iterrows() )
+        table = pd.concat( row for row in feature_rows if row is not None ) \
+            .set_index("original_index")
 
-    table.to_sql(f"{table_name}_scores", connection, if_exists = "replace")
+        table.to_sql(f"{table_name}_scores", connection, if_exists = "replace" if should_create_table else "append")
+        should_create_table = False
+
     connection.close()
 
 

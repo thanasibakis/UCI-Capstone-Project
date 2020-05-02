@@ -113,7 +113,7 @@ songs %>%
 	select(title, artist) %>%
 	write_tsv("metadata.tsv")
 
-
+# http://projector.tensorflow.org/?config=https://gist.githubusercontent.com/thanasibakis/8c52564194e59bdbc8fa448ff036ea74/raw/5fe3276152b6514ecbc74e1b8452b123d6f7f52b/template_projector_config.json
 
 
 

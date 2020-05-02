@@ -81,6 +81,13 @@ if __name__ == "__main__":
 
 
     # Lyrics processing
+    #
+    # WARNING: do not do this in chunks like we do for Reddit
+    # because we rely on the pandas-created index column here
+    # to match up the rows in the scores table to the rows in
+    # the lyrics table
+    #
+    # Bad design, I know
     
     if PROCESS_LYRICS:
         lyrics_table = pd.read_sql_query(f"select * from lyrics", connection)

@@ -6,3 +6,4 @@ nohup.out
 .ipynb_checkpoints/
 __pycache__/
 .Rhistory
+dataset.csv

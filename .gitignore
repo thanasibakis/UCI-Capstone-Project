@@ -7,3 +7,5 @@ nohup.out
 __pycache__/
 .Rhistory
 dataset.csv
+*.Rproj
+.Rproj.user/*

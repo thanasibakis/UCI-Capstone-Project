@@ -8,4 +8,4 @@ __pycache__/
 .Rhistory
 dataset.csv
 *.Rproj
-.Rproj.user/*
+.Rproj.user/

@@ -1,6 +1,7 @@
 # Load the data from the database to a local CSV
 
 library(DBI)
+library(tidyverse)
 source("api_keys.py")
 
 con <- dbConnect(

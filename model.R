@@ -1,3 +1,6 @@
+# This model performs PCA on the music and news features separately, then interacts them on each other.
+# We moved to model 2, which performs PCA on the entire set of features to form interactions.
+
 library(magrittr)
 library(plotROC)
 library(plotly)

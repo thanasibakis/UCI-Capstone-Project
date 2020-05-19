@@ -7,10 +7,10 @@ output: html_document
 
 <style type="text/css">
   body {
-    font-family: "Roboto";
+    font-family: "Roboto, Arial";
   }
   code {
-    font-family: "Fira Code Retina";
+    font-family: "Fira Code Retina, monospace";
   }
 </style>
 

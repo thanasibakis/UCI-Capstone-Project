@@ -1,10 +1,8 @@
 ---
 title: "Model 2"
 author: "Thanasi Bakis, Anjali Krishnan"
-date: "5/18/2020"
 output:
   html_document: default
-  pdf_document: default
 ---
 
 <style type="text/css">
@@ -22,23 +20,48 @@ library(plotROC)
 library(tidyverse)
 library(glmnet)
 library(extrafont)
+library(DBI)
 
 if(.Platform$OS.type == "windows")
   loadfonts(device = "win") # I believe this is only needed on Windows?
 ```
 
+```{r}
+DATASET_FILE <- "dataset.csv"
+FEATURES_FILE <- "model2_features.rda"
+MODEL_FILE <- "model2.rda"
+API_KEYS_FILE <- "../api_keys.py"
+```
+
+
 Retrieve the data saved from the database
 
 ```{r message=FALSE, warning=FALSE}
-dataset <- read_csv("dataset.csv") %>%
-  filter(lastpos != 0) # songs on the charts for the first time haven't changed rank
+if(file.exists(DATASET_FILE)) {
+  dataset <- read_csv(DATASET_FILE)
+} else {
+  source(API_KEYS_FILE)
+
+  con <- dbConnect(
+  	RPostgres::Postgres(),
+  	host = SQL_HOST,
+  	dbname = SQL_DB,
+  	user = SQL_USER,
+  	password = SQL_PASS
+  )
+  
+  dataset <- tbl(con, "dataset") %>%
+    filter(lastpos != 0) %>% # songs on the charts for the first time haven't changed rank
+  	collect()
+  
+  dbDisconnect(con)
+  write_csv(dataset, DATASET_FILE)
+}
 ```
 
 Our interaction terms will be defined as principal components (linear combinations of the original features)
 
 ```{r}
-FEATURES_FILE <- "model2_features.rda"
-
 if(file.exists(FEATURES_FILE)) {
   load(FEATURES_FILE)
 } else {
@@ -87,8 +110,6 @@ testing_data <- anti_join(features, training_data)
 Fit the model (warning: it's slow)
 
 ```{r}
-MODEL_FILE <- "model2.rda"
-
 if(file.exists(MODEL_FILE)) {
   load(MODEL_FILE)
 } else {

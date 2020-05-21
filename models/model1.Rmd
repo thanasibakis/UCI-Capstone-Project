@@ -1,0 +1,232 @@
+---
+title: "Model 1"
+author: "Thanasi Bakis, Anjali Krishnan"
+output:
+  html_document: default
+---
+
+<style type="text/css">
+  body {
+    font-family: "Roboto", sans-serif;
+  }
+  code {
+    font-family: "Fira Code Retina", monospace;
+  }
+</style>
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(magrittr)
+library(plotROC)
+library(tidyverse)
+library(glmnet)
+library(extrafont)
+library(DBI)
+
+if(.Platform$OS.type == "windows")
+  loadfonts(device = "win") # I believe this is only needed on Windows?
+```
+
+```{r}
+DATASET_FILE <- "dataset.csv"
+FEATURES_FILE <- "model1_features.rda"
+MODEL_FILE <- "model1.rda"
+API_KEYS_FILE <- "../api_keys.py"
+```
+
+
+Retrieve the data saved from the database
+
+```{r message=FALSE, warning=FALSE}
+if(file.exists(DATASET_FILE)) {
+  dataset <- read_csv(DATASET_FILE)
+} else {
+  source(API_KEYS_FILE)
+
+  con <- dbConnect(
+  	RPostgres::Postgres(),
+  	host = SQL_HOST,
+  	dbname = SQL_DB,
+  	user = SQL_USER,
+  	password = SQL_PASS
+  )
+  
+  dataset <- tbl(con, "dataset") %>%
+    filter(lastpos != 0) %>% # songs on the charts for the first time haven't changed rank
+  	collect()
+  
+  dbDisconnect(con)
+  write_csv(dataset, DATASET_FILE)
+}
+```
+
+Reduce dimensionality of the music and news features
+
+```{r}
+if(file.exists(FEATURES_FILE)) {
+  load(FEATURES_FILE)
+} else {
+  PCA_songs <- dataset %>%
+  	select(songpositivity,   songnegativity, songneutrality, songsentiment,
+  		   acousticness,     danceability,   duration_ms,    energy,
+  		   instrumentalness, key,            liveness,       loudness,
+  		   mode,             speechiness,    tempo,          time_signature,
+  		   valence,          peakpos,        weeks,
+  		   starts_with(c("songmin", "songmax"))) %>%
+  	prcomp() %>%
+  	magrittr::extract2("x") %>%
+  	magrittr::extract(, 1:30) %>%
+  	as.data.frame() %>%
+  	setNames(paste0("song_", colnames(.)))
+  
+  
+  PCA_news <- dataset %>%
+  	select(newspositivity,   newsnegativity, newsneutrality, newssentiment,
+  		   starts_with(c("newsmin", "newsmax"))) %>%
+  	prcomp() %>%
+  	magrittr::extract2("x") %>%
+  	magrittr::extract(, 1:30) %>%
+  	as.data.frame() %>%
+  	setNames(paste0("news_", colnames(.)))
+  
+  features <- PCA %>%
+  	magrittr::extract2("x") %>%
+  	as.data.frame()
+  
+  save(PCA_songs, PCA_news, file = FEATURES_FILE)
+}
+```
+
+Generate the model formula with all the interaction terms
+
+```{r}
+formula <- expand_grid(PC_song = colnames(PCA_songs), PC_news = colnames(PCA_news)) %>%
+	mutate(interaction = paste(PC_song, PC_news, sep = ":")) %>%
+	pull(interaction) %>%
+	paste(collapse = " + ") %>%
+	paste("response ~", . )
+```
+
+Merge the two PCA data frames with the response values to get one dataset
+
+```{r}
+features <- dataset %>%
+	mutate(response = rank < lastpos) %>%
+	select(response) %>%
+	cbind(PCA_songs, PCA_news)
+```
+
+
+Train-test split
+
+```{r message=FALSE, warning=FALSE}
+training_data <- features %>%
+	sample_frac(0.5)
+
+testing_data <- anti_join(features, training_data)
+```
+
+Fit the model (warning: it's slow)
+
+```{r}
+if(file.exists(MODEL_FILE)) {
+  load(MODEL_FILE)
+} else {
+  model <- glm(formula, data = training_data, family = "binomial")
+  summary(model)
+  
+  save(model, file = MODEL_FILE)
+}
+```
+
+Make predictions and assess accuracy
+
+```{r}
+predictions <- testing_data %>%
+  mutate(soft_prediction = predict.glm(model, newdata = ., type = "response")) %>%
+  mutate(hard_prediction = soft_prediction >= 0.5) %>%
+  mutate(is_correct      = hard_prediction == response)
+
+paste("Accuracy: ", 100*round(mean(predictions$is_correct), 4), "%", sep = '')
+```
+
+What is our test data's response distribution? 
+What is our model's prediction distribution?
+
+```{r}
+predictions %>%
+	select(response, hard_prediction) %>%
+	pivot_longer(
+		c(response, hard_prediction),
+		names_to = "Type",
+		values_to = "Value"
+	) %>%
+	ggplot(aes(x = Value)) +
+	geom_bar(aes(fill = Value)) +
+	ylim(0, nrow(predictions)) +
+	facet_wrap(
+		~ Type,
+		labeller = labeller(Type = c(hard_prediction = "Model Prediction", response = "True Value"))
+	) +
+	labs(title = "Distribution of response values and predictions") +
+  theme(
+    legend.position = "none",
+    text = element_text(size = 14, family = "Roboto Light"),
+    plot.title = element_text(size = 20)
+  )
+```
+
+How good are the hard predictions?
+
+```{r}
+predictions %>%
+	ggplot(aes(x = response, fill = hard_prediction)) +
+	geom_bar(position = position_dodge()) +
+	ylim(0, nrow(testing_data)) +
+	labs(
+	  x = "True Response Value",
+	  fill = "Model Prediction",
+	  title = "Distribution of model predictions",
+	  subtitle = "by response value"
+	) +
+  theme(
+    text = element_text(size = 14, family = "Roboto Light"),
+    plot.title = element_text(size = 20)
+  )
+```
+
+How good are the soft predictions?
+
+```{r}
+predictions %>%
+	ggplot(aes(y = soft_prediction, x = response)) +
+	geom_boxplot(fill = "lavender") +
+	labs(
+	  x = "Response Value",
+	  y = "Model Predicted Probability",
+	  title = "Distribution of model soft predictions",
+	  subtitle = "by response value"
+	) +
+  theme(
+    text = element_text(size = 14, family = "Roboto Light"),
+    plot.title = element_text(size = 20)
+  )
+```
+
+ROC curve to figure out which soft-->hard cutoff to use
+
+```{r warning=FALSE}
+predictions %>%
+	ggplot(aes(m = soft_prediction, d = response)) +
+	geom_roc(n.cuts = 20, labels = T, labelround = 2) +
+	geom_abline(a = 1, b = 0) +
+  labs(
+    x = "False Positive Rate",
+    y = "True Positive Rate",
+    title = "ROC Curve"
+  ) +
+  theme(
+    text = element_text(size = 14, family = "Roboto Light"),
+    plot.title = element_text(size = 20)
+  )
+```
+

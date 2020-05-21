@@ -92,11 +92,11 @@ songs <- uri %>%
 
 songs %>%
 	select(starts_with("min_embedding")) %>%
-	write_tsv("TEF-demo/embeddings.tsv", col_names = F)
+	write_tsv("TEP-demo/embeddings.tsv", col_names = F)
 
 songs %>%
 	select(title, artist) %>%
-	write_tsv("TEF-demo/metadata.tsv")
+	write_tsv("TEP-demo/metadata.tsv")
 
 
 dbDisconnect(con)

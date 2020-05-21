@@ -1,0 +1,13 @@
+{
+  "embeddings": [
+    {
+      "tensorName": "Hot Songs - Lyrics Word Embeddings",
+      "tensorShape": [
+        2670,
+        300
+      ],
+      "tensorPath": "https://raw.githubusercontent.com/thanasibakis/UCI-Capstone-Project/master/demo/embeddings.tsv",
+      "metadataPath": "https://raw.githubusercontent.com/thanasibakis/UCI-Capstone-Project/master/demo/metadata.tsv"
+    }
+  ]
+}

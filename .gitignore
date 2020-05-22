@@ -9,3 +9,5 @@ __pycache__/
 *.Rproj
 .Rproj.user/
 *.rda
+report/
+dataset.csv

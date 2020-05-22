@@ -29,7 +29,7 @@ if(.Platform$OS.type == "windows")
 ```{r}
 DATASET_FILE <- "dataset.csv"
 FEATURES_FILE <- "model2_features.rda"
-MODEL_FILE <- "model2.rda"
+MODEL_FILE <- "model2_fit.rda"
 API_KEYS_FILE <- "../api_keys.py"
 ```
 
@@ -209,7 +209,7 @@ predictions %>%
 ROC curve to figure out which soft-->hard cutoff to use
 
 ```{r warning=FALSE}
-predictions %>%
+roc <- predictions %>%
 	ggplot(aes(m = soft_prediction, d = response)) +
 	geom_roc(n.cuts = 20, labels = T, labelround = 2) +
 	geom_abline(a = 1, b = 0) +
@@ -222,5 +222,12 @@ predictions %>%
     text = element_text(size = 14, family = "Roboto Light"),
     plot.title = element_text(size = 20)
   )
+
+roc
 ```
 
+Calculate the AUC
+
+```{r message=FALSE, warning=FALSE}
+calc_auc(roc)$AUC
+```

@@ -29,7 +29,7 @@ if(.Platform$OS.type == "windows")
 ```{r}
 DATASET_FILE <- "dataset.csv"
 FEATURES_FILE <- "model1_features.rda"
-MODEL_FILE <- "model1.rda"
+MODEL_FILE <- "model1_fit.rda"
 API_KEYS_FILE <- "../api_keys.py"
 ```
 
@@ -88,10 +88,6 @@ if(file.exists(FEATURES_FILE)) {
   	as.data.frame() %>%
   	setNames(paste0("news_", colnames(.)))
   
-  features <- PCA %>%
-  	magrittr::extract2("x") %>%
-  	as.data.frame()
-  
   save(PCA_songs, PCA_news, file = FEATURES_FILE)
 }
 ```
@@ -125,9 +121,9 @@ training_data <- features %>%
 testing_data <- anti_join(features, training_data)
 ```
 
-Fit the model (warning: it's slow)
+Fit the model
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 if(file.exists(MODEL_FILE)) {
   load(MODEL_FILE)
 } else {
@@ -215,7 +211,7 @@ predictions %>%
 ROC curve to figure out which soft-->hard cutoff to use
 
 ```{r warning=FALSE}
-predictions %>%
+roc <- predictions %>%
 	ggplot(aes(m = soft_prediction, d = response)) +
 	geom_roc(n.cuts = 20, labels = T, labelround = 2) +
 	geom_abline(a = 1, b = 0) +
@@ -228,5 +224,13 @@ predictions %>%
     text = element_text(size = 14, family = "Roboto Light"),
     plot.title = element_text(size = 20)
   )
+
+roc
+```
+
+Calculate the AUC
+
+```{r message=FALSE, warning=FALSE}
+calc_auc(roc)$AUC
 ```
 

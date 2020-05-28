@@ -1,0 +1,95 @@
+---
+title: "`r paste('Model', params$model_name)`"
+author: "Thanasi Bakis, Anjali Krishnan"
+params:
+  model_name: 3
+---
+
+```{r child="includes/setup.Rmd"}
+```
+
+
+```{r child="includes/retrieve_data.Rmd"}
+```
+
+
+Our interaction terms will be implemented as branches in the decision trees
+
+```{r}
+features <- dataset %>%
+	select(songpositivity,   songnegativity, songneutrality, songsentiment,
+		     acousticness,     danceability,   duration_ms,    energy,
+		     instrumentalness, key,            liveness,       loudness,
+		     mode,             speechiness,    tempo,          time_signature,
+		     valence,          peakpos,        weeks,          lastpos,
+		     starts_with(c("songmin", "songmax")),
+
+		     newspositivity,   newsnegativity, newsneutrality, newssentiment,
+		     starts_with(c("newsmin", "newsmax"))) %>%
+	mutate(response = factor(dataset$rank < lastpos))
+```
+
+
+Generate the model formula
+
+```{r}
+formula <- features %>%
+  select(-response) %>%
+  colnames() %>%
+	paste(collapse = " + ") %>%
+	paste("response ~", . )
+```
+
+
+Train-test split
+
+```{r message=FALSE, warning=FALSE}
+training_data <- features %>%
+	sample_frac(0.5)
+
+testing_data <- anti_join(features, training_data)
+```
+
+
+Fit the model
+
+```{r message=FALSE, warning=FALSE}
+if(file.exists(MODEL_FILE)) {
+  
+  load(MODEL_FILE)
+  
+} else {
+  
+  model <- randomForest(
+    as.formula(formula),
+    data = training_data,
+    ntree = 500
+  )
+  
+  save(model, file = MODEL_FILE)
+  
+}
+```
+
+
+Make predictions and assess accuracy
+
+```{r}
+predictions <- testing_data %>%
+	mutate(hard_prediction = predict(model, newx = as.matrix(select(., -response)), type = "response")) %>%
+	mutate(is_correct      = hard_prediction == response)
+
+paste("Accuracy: ", 100*round(mean(predictions$is_correct), 4), "%", sep = '')
+```
+
+
+Assess error across various forest sizes
+
+```{r}
+plot(model)
+```
+
+
+```{r child="includes/prediction_distributions.Rmd"}
+```
+

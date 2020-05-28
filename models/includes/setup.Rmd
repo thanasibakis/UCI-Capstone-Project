@@ -1,0 +1,29 @@
+<style type="text/css">
+  code {
+    font-family: "Fira Code Retina", monospace;
+  }
+</style>
+  
+```{r libraries, warning=FALSE, include=FALSE, message=FALSE}
+library(magrittr)
+library(plotROC)
+library(tidyverse)
+library(randomForest)
+library(glmnet)
+library(extrafont)
+library(DBI)
+
+if(.Platform$OS.type == "windows")
+  loadfonts(device = "win") # I believe this is only needed on Windows?
+```
+
+```{r save_parameters, include=FALSE}
+# In the context of the models/includes folder
+DATASET_FILE <- "../saves/dataset.csv"
+API_KEYS_FILE <- "../api_keys.py"
+
+# In the context of the models folder
+FEATURES_FILE <- paste("saves/model", params$model_name, "_features.rda", sep = '')
+MODEL_FILE <- paste("saves/model", params$model_name, "_fit.rda", sep = '')
+```
+

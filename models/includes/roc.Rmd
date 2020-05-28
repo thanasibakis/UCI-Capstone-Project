@@ -1,0 +1,25 @@
+ROC curve to figure out which soft-->hard cutoff to use
+
+```{r warning=FALSE}
+roc <- predictions %>%
+  ggplot(aes(m = soft_prediction, d = response)) +
+  geom_roc(n.cuts = 20, labels = T, labelround = 2) +
+  geom_abline(a = 1, b = 0) +
+  labs(
+    x = "False Positive Rate",
+    y = "True Positive Rate",
+    title = "ROC Curve"
+  ) +
+  theme(
+    text = element_text(size = 14, family = "Roboto Light"),
+    plot.title = element_text(size = 20)
+  )
+
+roc
+```
+
+Calculate the AUC
+
+```{r message=FALSE, warning=FALSE}
+calc_auc(roc)$AUC
+```

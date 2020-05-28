@@ -1,0 +1,86 @@
+---
+title: "`r paste('Model', params$model_name)`"
+author: "Thanasi Bakis, Anjali Krishnan"
+params:
+  model_name: [SET ME PLEASE]
+---
+
+```{r child="includes/setup.Rmd"}
+```
+
+
+```{r child="includes/retrieve_data.Rmd"}
+```
+
+
+Generate features
+
+```{r}
+if(file.exists(FEATURES_FILE)) {
+  
+  load(FEATURES_FILE)
+  
+} else {
+  
+  save(..., file = FEATURES_FILE)
+  
+}
+```
+
+
+Generate the model formula
+
+```{r}
+formula <- ...
+```
+
+
+Train-test split
+
+```{r message=FALSE, warning=FALSE}
+training_data <- features %>%
+	sample_frac(0.5)
+
+testing_data <- anti_join(features, training_data)
+```
+
+
+Fit the model
+
+```{r message=FALSE, warning=FALSE}
+if(file.exists(MODEL_FILE)) {
+  
+  load(MODEL_FILE)
+  
+} else {
+  
+  model <- ...
+  
+  save(model, file = MODEL_FILE)
+  
+}
+```
+
+
+Make predictions and assess accuracy
+
+```{r}
+predictions <- testing_data %>%
+  ... %>%
+  mutate(is_correct = ...)
+
+paste("Accuracy: ", 100*round(mean(predictions$is_correct), 4), "%", sep = '')
+```
+
+
+```{r child="includes/prediction_distributions.Rmd"}
+```
+
+
+```{r child="includes/soft_prediction_distribution.Rmd"}
+```
+
+
+```{r child="includes/roc.Rmd"}
+```
+

@@ -1,70 +1,27 @@
 ---
-title: "Model 1"
+title: "`r paste('Model', params$model_name)`"
 author: "Thanasi Bakis, Anjali Krishnan"
-output:
-  html_document: default
+params:
+  model_name: 1
 ---
 
-<style type="text/css">
-  body {
-    font-family: "Roboto", sans-serif;
-  }
-  code {
-    font-family: "Fira Code Retina", monospace;
-  }
-</style>
-
-```{r message=FALSE, warning=FALSE, include=FALSE}
-library(magrittr)
-library(plotROC)
-library(tidyverse)
-library(glmnet)
-library(extrafont)
-library(DBI)
-
-if(.Platform$OS.type == "windows")
-  loadfonts(device = "win") # I believe this is only needed on Windows?
-```
-
-```{r}
-DATASET_FILE <- "dataset.csv"
-FEATURES_FILE <- "model1_features.rda"
-MODEL_FILE <- "model1_fit.rda"
-API_KEYS_FILE <- "../api_keys.py"
+```{r child="includes/setup.Rmd"}
 ```
 
 
-Retrieve the data saved from the database
-
-```{r message=FALSE, warning=FALSE}
-if(file.exists(DATASET_FILE)) {
-  dataset <- read_csv(DATASET_FILE)
-} else {
-  source(API_KEYS_FILE)
-
-  con <- dbConnect(
-  	RPostgres::Postgres(),
-  	host = SQL_HOST,
-  	dbname = SQL_DB,
-  	user = SQL_USER,
-  	password = SQL_PASS
-  )
-  
-  dataset <- tbl(con, "dataset") %>%
-    filter(lastpos != 0) %>% # songs on the charts for the first time haven't changed rank
-  	collect()
-  
-  dbDisconnect(con)
-  write_csv(dataset, DATASET_FILE)
-}
+```{r child="includes/retrieve_data.Rmd"}
 ```
+
 
 Reduce dimensionality of the music and news features
 
 ```{r}
 if(file.exists(FEATURES_FILE)) {
+  
   load(FEATURES_FILE)
+  
 } else {
+  
   PCA_songs <- dataset %>%
   	select(songpositivity,   songnegativity, songneutrality, songsentiment,
   		   acousticness,     danceability,   duration_ms,    energy,
@@ -89,8 +46,10 @@ if(file.exists(FEATURES_FILE)) {
   	setNames(paste0("news_", colnames(.)))
   
   save(PCA_songs, PCA_news, file = FEATURES_FILE)
+  
 }
 ```
+
 
 Generate the model formula with all the interaction terms
 
@@ -102,11 +61,12 @@ formula <- expand_grid(PC_song = colnames(PCA_songs), PC_news = colnames(PCA_new
 	paste("response ~", . )
 ```
 
+
 Merge the two PCA data frames with the response values to get one dataset
 
 ```{r}
 features <- dataset %>%
-	mutate(response = rank < lastpos) %>%
+	mutate(response = factor(rank < lastpos)) %>%
 	select(response) %>%
 	cbind(PCA_songs, PCA_news)
 ```
@@ -121,116 +81,45 @@ training_data <- features %>%
 testing_data <- anti_join(features, training_data)
 ```
 
+
 Fit the model
 
 ```{r message=FALSE, warning=FALSE}
 if(file.exists(MODEL_FILE)) {
+  
   load(MODEL_FILE)
+  
 } else {
+  
   model <- glm(formula, data = training_data, family = "binomial")
   summary(model)
   
   save(model, file = MODEL_FILE)
+  
 }
 ```
+
 
 Make predictions and assess accuracy
 
 ```{r}
 predictions <- testing_data %>%
-  mutate(soft_prediction = predict.glm(model, newdata = ., type = "response")) %>%
+  mutate(soft_prediction = predict(model, newdata = ., type = "response")) %>%
   mutate(hard_prediction = soft_prediction >= 0.5) %>%
   mutate(is_correct      = hard_prediction == response)
 
 paste("Accuracy: ", 100*round(mean(predictions$is_correct), 4), "%", sep = '')
 ```
 
-What is our test data's response distribution? 
-What is our model's prediction distribution?
 
-```{r}
-predictions %>%
-	select(response, hard_prediction) %>%
-	pivot_longer(
-		c(response, hard_prediction),
-		names_to = "Type",
-		values_to = "Value"
-	) %>%
-	ggplot(aes(x = Value)) +
-	geom_bar(aes(fill = Value)) +
-	ylim(0, nrow(predictions)) +
-	facet_wrap(
-		~ Type,
-		labeller = labeller(Type = c(hard_prediction = "Model Prediction", response = "True Value"))
-	) +
-	labs(title = "Distribution of response values and predictions") +
-  theme(
-    legend.position = "none",
-    text = element_text(size = 14, family = "Roboto Light"),
-    plot.title = element_text(size = 20)
-  )
+```{r child="includes/prediction_distributions.Rmd"}
 ```
 
-How good are the hard predictions?
 
-```{r}
-predictions %>%
-	ggplot(aes(x = response, fill = hard_prediction)) +
-	geom_bar(position = position_dodge()) +
-	ylim(0, nrow(testing_data)) +
-	labs(
-	  x = "True Response Value",
-	  fill = "Model Prediction",
-	  title = "Distribution of model predictions",
-	  subtitle = "by response value"
-	) +
-  theme(
-    text = element_text(size = 14, family = "Roboto Light"),
-    plot.title = element_text(size = 20)
-  )
+```{r child="includes/soft_prediction_distribution.Rmd"}
 ```
 
-How good are the soft predictions?
 
-```{r}
-predictions %>%
-	ggplot(aes(y = soft_prediction, x = response)) +
-	geom_boxplot(fill = "lavender") +
-	labs(
-	  x = "Response Value",
-	  y = "Model Predicted Probability",
-	  title = "Distribution of model soft predictions",
-	  subtitle = "by response value"
-	) +
-  theme(
-    text = element_text(size = 14, family = "Roboto Light"),
-    plot.title = element_text(size = 20)
-  )
-```
-
-ROC curve to figure out which soft-->hard cutoff to use
-
-```{r warning=FALSE}
-roc <- predictions %>%
-	ggplot(aes(m = soft_prediction, d = response)) +
-	geom_roc(n.cuts = 20, labels = T, labelround = 2) +
-	geom_abline(a = 1, b = 0) +
-  labs(
-    x = "False Positive Rate",
-    y = "True Positive Rate",
-    title = "ROC Curve"
-  ) +
-  theme(
-    text = element_text(size = 14, family = "Roboto Light"),
-    plot.title = element_text(size = 20)
-  )
-
-roc
-```
-
-Calculate the AUC
-
-```{r message=FALSE, warning=FALSE}
-calc_auc(roc)$AUC
+```{r child="includes/roc.Rmd"}
 ```
 

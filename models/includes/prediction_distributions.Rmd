@@ -1,0 +1,46 @@
+What is our test data's response distribution? 
+What is our model's prediction distribution?
+
+```{r}
+predictions %>%
+	select(response, hard_prediction) %>%
+  mutate(response = as.logical(response),
+         hard_prediction = as.logical(hard_prediction)) %>% # un-factorize if necessary
+	pivot_longer(
+		c(response, hard_prediction),
+		names_to = "Type",
+		values_to = "Value"
+	) %>%
+	ggplot(aes(x = Value)) +
+	geom_bar(aes(fill = Value)) +
+	ylim(0, nrow(predictions)) +
+	facet_wrap(
+		~ Type,
+		labeller = labeller(Type = c(hard_prediction = "Model Prediction", response = "True Value"))
+	) +
+	labs(title = "Distribution of response values and predictions") +
+  theme(
+    legend.position = "none",
+    text = element_text(size = 14, family = "Roboto Light"),
+    plot.title = element_text(size = 20)
+  )
+```
+
+How good are the hard predictions?
+
+```{r}
+predictions %>%
+	ggplot(aes(x = response, fill = hard_prediction)) +
+	geom_bar(position = position_dodge()) +
+	ylim(0, nrow(testing_data)) +
+	labs(
+	  x = "True Response Value",
+	  fill = "Model Prediction",
+	  title = "Distribution of model predictions",
+	  subtitle = "by response value"
+	) +
+  theme(
+    text = element_text(size = 14, family = "Roboto Light"),
+    plot.title = element_text(size = 20)
+  )
+```

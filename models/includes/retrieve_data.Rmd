@@ -1,0 +1,28 @@
+Retrieve the data saved from the database
+
+```{r load_dataset, message=FALSE, warning=FALSE}
+if(file.exists(DATASET_FILE)) {
+  
+  dataset <- read_csv(DATASET_FILE)
+  
+} else {
+  
+  source(API_KEYS_FILE)
+  
+  con <- dbConnect(
+    RPostgres::Postgres(),
+    host = SQL_HOST,
+    dbname = SQL_DB,
+    user = SQL_USER,
+    password = SQL_PASS
+  )
+  
+  dataset <- tbl(con, "dataset") %>%
+    filter(lastpos != 0) %>% # songs on the charts for the first time haven't changed rank
+    collect()
+  
+  dbDisconnect(con)
+  write_csv(dataset, DATASET_FILE)
+  
+}
+```

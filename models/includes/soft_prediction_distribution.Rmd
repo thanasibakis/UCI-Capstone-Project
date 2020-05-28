@@ -1,0 +1,17 @@
+How good are the soft predictions?
+  
+```{r}
+predictions %>%
+  ggplot(aes(y = soft_prediction, x = response)) +
+  geom_boxplot(fill = "lavender") +
+  labs(
+    x = "Response Value",
+    y = "Model Predicted Probability",
+    title = "Distribution of model soft predictions",
+    subtitle = "by response value"
+  ) +
+  theme(
+    text = element_text(size = 14, family = "Roboto Light"),
+    plot.title = element_text(size = 20)
+  )
+```

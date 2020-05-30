@@ -12,6 +12,7 @@ library(randomForest)
 library(glmnet)
 library(extrafont)
 library(DBI)
+library(here)
 
 if(.Platform$OS.type == "windows")
   loadfonts(device = "win") # I believe this is only needed on Windows?
@@ -19,11 +20,15 @@ if(.Platform$OS.type == "windows")
 
 ```{r save_parameters, include=FALSE}
 # In the context of the models/includes folder
-DATASET_FILE <- "../saves/dataset.csv"
-API_KEYS_FILE <- "../api_keys.py"
+DATASET_FILE <- here("models", "saves", "dataset.csv")
+API_KEYS_FILE <- here("api_keys.py")
+TT_SPLIT_FILE <- paste("model", params$model_name, "ttsplit.rda", sep = '_') %>%
+  here("models", "saves", .)
 
 # In the context of the models folder
-FEATURES_FILE <- paste("saves/model", params$model_name, "_features.rda", sep = '')
-MODEL_FILE <- paste("saves/model", params$model_name, "_fit.rda", sep = '')
+FEATURES_FILE <- paste("model", params$model_name, "features.rda", sep = '_') %>%
+  here("models", "saves", .)
+MODEL_FILE <- paste("model", params$model_name, "fit.rda", sep = '_') %>%
+  here("models", "saves", .)
 ```
 

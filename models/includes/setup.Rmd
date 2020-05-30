@@ -19,13 +19,10 @@ if(.Platform$OS.type == "windows")
 ```
 
 ```{r save_parameters, include=FALSE}
-# In the context of the models/includes folder
 DATASET_FILE <- here("models", "saves", "dataset.csv")
 API_KEYS_FILE <- here("api_keys.py")
 TT_SPLIT_FILE <- paste("model", params$model_name, "ttsplit.rda", sep = '_') %>%
   here("models", "saves", .)
-
-# In the context of the models folder
 FEATURES_FILE <- paste("model", params$model_name, "features.rda", sep = '_') %>%
   here("models", "saves", .)
 MODEL_FILE <- paste("model", params$model_name, "fit.rda", sep = '_') %>%

@@ -3,7 +3,7 @@ How good are the soft predictions?
 ```{r}
 predictions %>%
   ggplot(aes(y = soft_prediction, x = response)) +
-  geom_boxplot(fill = "lavender") +
+  geom_boxplot(fill = "#F8867D") +
   labs(
     x = "Response Value",
     y = "Model Predicted Probability",

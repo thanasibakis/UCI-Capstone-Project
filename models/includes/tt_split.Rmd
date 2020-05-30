@@ -1,0 +1,19 @@
+Train-test split
+
+```{r message=FALSE, warning=FALSE}
+if(file.exists(TT_SPLIT_FILE)) {
+  
+  load(TT_SPLIT_FILE)
+  
+} else {
+  
+  training_data <- features %>%
+  sample_frac(0.5)
+
+  testing_data <- anti_join(features, training_data)
+  
+  save(training_data, testing_data, file = TT_SPLIT_FILE)
+  
+}
+
+```

@@ -56,13 +56,7 @@ formula <- features %>%
 ```
 
 
-Train-test split
-
-```{r message=FALSE, warning=FALSE}
-training_data <- features %>%
-	sample_frac(0.5)
-
-testing_data <- anti_join(features, training_data)
+```{r child="includes/tt_split.Rmd"}
 ```
 
 

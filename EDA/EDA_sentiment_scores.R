@@ -2,10 +2,6 @@ library(tidyverse)
 library(extrafont)
 
 
-if(.Platform$OS.type == "windows")
-  loadfonts(device = "win") # I believe this is only needed on Windows?
-
-
 data <- read_csv("models/saves/dataset.csv")
 
 
@@ -21,7 +17,7 @@ data %>%
   ) +
 	ylim(c(0, 0.3))
 
-ggsave("news_plot.png", device="png", width=10, height=6) #hidpi export
+ggsave("news_plot.svg", width=10, height=6) #hidpi export
 
 
 # news was most negative in the month of April 2013
@@ -42,7 +38,7 @@ data %>%
   ) +
 	ylim(c(0, 0.3))
 
-ggsave("music_plot.png", device="png", width=10, height=6) #hidpi export
+ggsave("music_plot.svg", width=10, height=6) #hidpi export
 
 # meanwhile, a massive decline in chart negativity begain in April 2013,
 # and a decently sharp increase in chart positivity coincides with it

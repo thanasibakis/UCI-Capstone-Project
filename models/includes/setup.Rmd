@@ -13,9 +13,6 @@ library(glmnet)
 library(extrafont)
 library(DBI)
 library(here)
-
-if(.Platform$OS.type == "windows")
-  loadfonts(device = "win") # I believe this is only needed on Windows?
 ```
 
 ```{r save_parameters, include=FALSE}

@@ -154,6 +154,7 @@ The self-written software developed for this project is as follows, listed in or
 | `EDA_word_embeddings.R` | An EDA script for exporting the music data for use in the Tensorflow Embeddings Projector |
 | `model1.Rmd` | A data analysis notebook for fitting Model 1 |
 | `model2.Rmd` | A data analysis notebook for fitting Model 2 |
+| `model3.Rmd` | A data analysis notebook for fitting Model 3 |
 
 The third-party software and libraries we utilized are as follows, in approximate order of use:
 

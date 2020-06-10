@@ -4,8 +4,8 @@ dataset.csv
 .DS_STORE
 GoogleNews-vectors-negative300.bin
 .ipynb_checkpoints/
+models/saves/*.rda
 nohup.out
-*.rda
 .Rhistory
 *.Rproj
 .Rproj.user/

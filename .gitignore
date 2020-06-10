@@ -7,7 +7,6 @@ GoogleNews-vectors-negative300.bin
 models/saves/*.rda
 nohup.out
 .Rhistory
-*.Rproj
 .Rproj.user/
 __pycache__/
 svg-inkscape/
